@@ -16,12 +16,12 @@ bot = telebot.TeleBot(os.getenv("TELEGRAM_BOT_TOKEN", "Put here your token"))
 
 
 @bot.message_handler(commands=["start"])
-def start(m, res=False):
-    bot.send_message(m.chat.id, 'Я на связи. Для получения списка команд напишите /help')
+def start(message, res=False):
+    bot.send_message(message.chat.id, 'Я на связи. Для получения списка команд напишите /help')
 
 
 @bot.message_handler(commands=["help"])
-def help(m, res=False):
+def help(message, res=False):
     markup = types.ReplyKeyboardMarkup(resize_keyboard=True)
     item1 = types.KeyboardButton("/help")
     item2 = types.KeyboardButton("/lowprice")
@@ -29,7 +29,7 @@ def help(m, res=False):
     item4 = types.KeyboardButton("/bestdeal")
     item5 = types.KeyboardButton("/history")
     markup.add(item1, item2, item3, item4, item5)
-    bot.send_message(m.chat.id, "Список команд:\n"
+    bot.send_message(message.chat.id, "Список команд:\n"
                                 "/help — помощь по командам бота,\n"
                                 "/lowprice — вывод самых дешёвых отелей в городе,\n"
                                 "/highprice — вывод самых дорогих отелей в городе,\n"
