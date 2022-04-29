@@ -1,7 +1,6 @@
 import telebot
 from telebot import types
-from api_singleton import ApiSgltn
-from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
+from old.api_singleton import ApiSgltn
 from datetime import date
 
 class SearchRequest:
