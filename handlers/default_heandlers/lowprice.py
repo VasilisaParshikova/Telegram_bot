@@ -2,20 +2,20 @@ from telebot.types import Message
 from loader import bot
 from states.search_request import UserRequestState
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
-from datetime import date
+from datetime import date, timedelta
 
 
 @bot.message_handler(commands=['lowprice'])
 def bot_lowprice(message: Message):
-    bot.set_state(message.from_user.id, UserRequestState.sity, message.chat.id)
-    bot.send_message(message.chat.id, 'Запускаем поиск самых дешёвых отелей.'
+    bot.set_state(message.from_user.id, UserRequestState.city, message.chat.id)
+    bot.send_message(message.chat.id, 'Запускаем поиск самых дешёвых отелей. '
                                       'В каком городе искать отели?')
 
 
-@bot.message_handler(state=UserRequestState.sity)
-def get_sity(message: Message):
+@bot.message_handler(state=UserRequestState.city)
+def get_city(message: Message):
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['sity'] = message.text
+        data['city'] = message.text
     bot.set_state(message.from_user.id, UserRequestState.date_in, message.chat.id)
     calendar, step = DetailedTelegramCalendar(min_date=date.today()).build()
     bot.send_message(message.chat.id, 'Хорошо. Теперь укажи дату заезда.', reply_markup=calendar)
@@ -33,8 +33,8 @@ def cal_date_in(c):
         bot.edit_message_text(f"Дата заезда: {result}",
                               c.message.chat.id,
                               c.message.message_id)
-        #      with bot.retrieve_data(c.message.from_user.id, c.message.chat.id) as data:
-        #          data['date_in'] = c.message.text
+        with bot.retrieve_data(c.from_user.id, c.message.chat.id) as data:
+            data['date_in'] = result
         bot.send_message(c.message.chat.id, 'Хорошо. Теперь укажи количество дней проживания.')
 
 
@@ -44,7 +44,7 @@ def get_date_out(message: Message):
         bot.set_state(message.from_user.id, UserRequestState.date_out, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['duration'] = int(message.text)
-            #    data['date_out'] = data['date_in'] + data['duration']
+            data['date_out'] = data['date_in'] + timedelta(days=data['duration'])
             bot.send_message(message.chat.id, 'Хорошо. '
                                               'Теперь укажи какое количество отелей надо вывести (от 1 до 10).')
     else:
@@ -76,7 +76,8 @@ def get_foto_flag(message: Message):
         bot.set_state(message.from_user.id, UserRequestState.foto_amount, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['foto_flag'] = False
-            text = f'Вы ищте самые дешёвые отели в городе {data["sity"]} на {data["duration"]} дней.' \
+            text = f'Вы ищте самые дешёвые отели в городе {data["city"]} на период с {data["date_in"]} ' \
+                   f'по {data["date_out"]}.' \
                    f'Надо вывести {data["hotel_amount"]} отелей без фото'
             bot.send_message(message.chat.id, text)
     else:
@@ -88,7 +89,8 @@ def get_foto_amount(message: Message):
         bot.set_state(message.from_user.id, UserRequestState.foto_amount, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['foto_amount'] = int(message.text)
-            text = f'Вы ищте самые дешёвые отели в городе {data["sity"]} на {data["duration"]} дней.' \
+            text = f'Вы ищте самые дешёвые отели в городе {data["city"]} на период с {data["date_in"]} ' \
+                   f'по {data["date_out"]}.' \
                    f'Надо вывести {data["hotel_amount"]} отелей c {data["foto_amount"]} фото'
             bot.send_message(message.chat.id, text)
     else:

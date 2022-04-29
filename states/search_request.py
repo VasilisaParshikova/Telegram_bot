@@ -1,7 +1,7 @@
 from telebot.handler_backends import State, StatesGroup
 
 class UserRequestState(StatesGroup):
-    sity = State()
+    city = State()
     date_in = State()
     date_out = State()
     hotel_amount = State()
