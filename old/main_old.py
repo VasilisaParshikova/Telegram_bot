@@ -2,7 +2,7 @@ import os
 import telebot
 from dotenv import load_dotenv
 from telebot import types
-from old.api_singleton import ApiSgltn
+from repid_api.api_singleton import ApiSgltn
 from old_class import SearchRequest
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 

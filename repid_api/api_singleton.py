@@ -15,26 +15,29 @@ class ApiSgltn:
         else:
             return ApiSgltn.__instance
 
-    def sity_request(self, sity: str):
+    def city_request(self, city: str):
         url = "https://hotels4.p.rapidapi.com/locations/v2/search"
-        querystring = {"query": sity}
+        querystring = {"query": city}
         response = requests.request("GET", url, headers=self.__headers, params=querystring)
-        sity_dict = json.loads(response.text)
-        if len(sity_dict['suggestions'][0]['entities']) == 0:
+        city_dict = json.loads(response.text)
+        if len(city_dict['suggestions'][0]['entities']) == 0:
             return False
         else:
-            sity_id = sity_dict['suggestions'][0]['entities'][0]['destinationId']
-            return sity_id
+            city_id = city_dict['suggestions'][0]['entities'][0]['destinationId']
+            return city_id
 
-    def get_results(self, sity_id: int, hotel_amount: int, req_type: int):
+    def get_results(self, city_id: int, hotel_amount: int, req_type: str, date_in: str, date_out: str):
         url = "https://hotels4.p.rapidapi.com/properties/list"
-        req_types = {0: "PRICE"}
+        req_types = {'lowprice': "PRICE",
+                     'highprice': "PRICE_HIGHEST_FIRST"}
 
-        querystring = {"destinationId": sity_id , "pageNumber": "1", "pageSize": hotel_amount,
-                       "checkIn": "2020-06-02",
-                       "checkOut": "2020-06-03", "adults1": "1", "sortOrder": req_types[req_type]}
+        querystring = {"destinationId": city_id, "pageNumber": "1", "pageSize": hotel_amount,
+                       "checkIn": date_in,
+                       "checkOut": date_out, "adults1": "1", "sortOrder": req_types[req_type]}
+        print(querystring)
         response = requests.request("GET", url, headers=self.__headers, params=querystring)
         hotels_dict = json.loads(response.text)
+        print(hotels_dict)
         hotels_dict = hotels_dict['data']['body']['searchResults']['results']
         results = []
         hotel_id_in_res = 0
@@ -42,9 +45,12 @@ class ApiSgltn:
             results.append(dict())
             results[hotel_id_in_res]['name'] = hotel_info['name']
             results[hotel_id_in_res]['starRating'] = hotel_info['starRating']
-            results[hotel_id_in_res]['address'] = hotel_info['address']['streetAddress']
+            if 'streetAddress' in hotel_info['address']:
+                results[hotel_id_in_res]['address'] = hotel_info['address']['streetAddress']
+            else:
+                results[hotel_id_in_res]['address'] = ' '
             #    results[hotel_id_in_res]['guestRating'] = hotel_info['guestReviews']['rating']
-            results[hotel_id_in_res]['price'] = hotel_info['ratePlan']['price']['current']
+            results[hotel_id_in_res]['price'] = hotel_info['ratePlan']['price']['fullyBundledPricePerStay']
             hotel_id_in_res += 1
         answer = []
 

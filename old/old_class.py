@@ -1,7 +1,7 @@
 import telebot
 from telebot import types
-from old.api_singleton import ApiSgltn
-from datetime import date
+from repid_api.api_singleton import ApiSgltn
+
 
 class SearchRequest:
     def __init__(self, type: int, message: types.Message, bot: telebot.TeleBot, api_worker: ApiSgltn):
