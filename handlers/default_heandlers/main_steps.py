@@ -4,10 +4,13 @@ from states.search_request import UserRequestState
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from datetime import date, timedelta
 from repid_api.api_singleton import ApiSgltn
+from keyboards.reply.yes_no import yes_no_reply
+from keyboards.reply.amount_request import amount_request
 
-commands = {
-    'lowprice': 'дешёвые',
-    'highprice': 'дорогие'}
+commands = [
+    'lowprice',
+    'highprice']
+
 
 @bot.message_handler(state=UserRequestState.city)
 def get_city(message: Message):
@@ -21,7 +24,8 @@ def get_city(message: Message):
         bot.send_message(message.chat.id, 'Хорошо. Теперь укажи дату заезда.', reply_markup=calendar)
     else:
         bot.send_message(message.chat.id, 'Название города указано не верно или '
-                                          'такого города нет в базе сайта hotels.com')
+                                          'такого города нет в базе сайта hotels.com. '
+                                          'Попробуйте снова проверив написание города или выбрав другой.')
 
 
 @bot.callback_query_handler(func=DetailedTelegramCalendar.func())
@@ -44,12 +48,18 @@ def cal_date_in(c):
 @bot.message_handler(state=UserRequestState.date_in)
 def get_date_out(message: Message):
     if message.text.isdigit() and int(message.text) > 0:
-        bot.set_state(message.from_user.id, UserRequestState.date_out, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['duration'] = int(message.text)
             data['date_out'] = data['date_in'] + timedelta(days=data['duration'])
-            bot.send_message(message.chat.id, 'Хорошо. '
-                                              'Теперь укажи какое количество отелей надо вывести (от 1 до 10).')
+            if data['command'] == 'beastdeal':
+                bot.set_state(message.from_user.id, UserRequestState.distance_from_center, message.chat.id)
+                bot.send_message(message.chat.id, 'Хорошо. Теперь укажи максимальную удалённость отеля от центра '
+                                                  'города в колиметрах.')
+            else:
+                bot.set_state(message.from_user.id, UserRequestState.date_out, message.chat.id)
+                bot.send_message(message.chat.id, 'Хорошо. '
+                                                  'Теперь укажи какое количество отелей надо вывести (от 1 до 10).',
+                                 reply_markup=amount_request())
     else:
         bot.send_message(message.chat.id,
                          'Длительность проживания должна быть указана числом (количество дней)')
@@ -63,7 +73,7 @@ def get_hotel_amount(message: Message):
             with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
                 data['hotel_amount'] = int(message.text)
             bot.send_message(message.chat.id, 'Хорошо. '
-                                              'Выводить ли фотографии отелей?')
+                                              'Выводить ли фотографии отелей?', reply_markup=yes_no_reply())
     else:
         bot.send_message(message.chat.id, 'Необходимо указать число от 1 до 10')
 
@@ -74,16 +84,21 @@ def get_foto_flag(message: Message):
         bot.set_state(message.from_user.id, UserRequestState.foto_flag, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['foto_flag'] = True
-        bot.send_message(message.chat.id, 'Сколько фото выводить (от 1 до 10)?')
+        bot.send_message(message.chat.id, 'Сколько фото выводить (от 1 до 10)?',
+                         reply_markup=amount_request())
     elif message.text.lower() == 'нет':
         bot.set_state(message.from_user.id, UserRequestState.foto_amount, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['foto_flag'] = False
-            result = ApiSgltn().get_results(data['city_id'],
-                                            data['hotel_amount'],
-                                            data['command'],
-                                            str(data['date_in']),
-                                            str(data['date_out']))
+            if data['command'] in commands:
+                result = ApiSgltn().get_results(data['city_id'],
+                                                data['hotel_amount'],
+                                                data['command'],
+                                                str(data['date_in']),
+                                                str(data['date_out']), )
+            else:
+                result = 'команда beastdeal отработала'
+
             if result:
                 bot.send_message(message.chat.id, result)
             else:
@@ -92,17 +107,21 @@ def get_foto_flag(message: Message):
     else:
         bot.send_message(message.chat.id, 'Надо ответить да или нет')
 
+
 @bot.message_handler(state=UserRequestState.foto_flag)
 def get_foto_amount(message: Message):
     if message.text.isdigit() and 1 <= int(message.text) <= 10:
         bot.set_state(message.from_user.id, UserRequestState.foto_amount, message.chat.id)
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['foto_amount'] = int(message.text)
-            result = ApiSgltn().get_results(data['city_id'],
-                                            data['hotel_amount'],
-                                            data['command'],
-                                            str(data['date_in']),
-                                            str(data['date_out']))
+            if data['command'] in commands:
+                result = ApiSgltn().get_results(data['city_id'],
+                                                data['hotel_amount'],
+                                                data['command'],
+                                                str(data['date_in']),
+                                                str(data['date_out']), )
+            else:
+                result = 'команда beastdeal отработала'
             if result:
                 bot.send_message(message.chat.id, result)
             else:
