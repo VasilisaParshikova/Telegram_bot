@@ -97,7 +97,12 @@ def get_foto_flag(message: Message):
                                                 str(data['date_in']),
                                                 str(data['date_out']), )
             else:
-                result = 'команда beastdeal отработала'
+                result = ApiSgltn().get_results_bestdeal(data['city_id'],
+                                                         data['hotel_amount'],
+                                                         str(data['date_in']),
+                                                         str(data['date_out']),
+                                                         data['distance_from_center'],
+                                                         data['max_price_per_night'])
 
             if result:
                 bot.send_message(message.chat.id, result)
@@ -121,7 +126,12 @@ def get_foto_amount(message: Message):
                                                 str(data['date_in']),
                                                 str(data['date_out']), )
             else:
-                result = 'команда beastdeal отработала'
+                result = ApiSgltn().get_results_bestdeal(data['city_id'],
+                                                         data['hotel_amount'],
+                                                         str(data['date_in']),
+                                                         str(data['date_out']),
+                                                         data['distance_from_center'],
+                                                         data['max_price_per_night'])
             if result:
                 bot.send_message(message.chat.id, result)
             else:

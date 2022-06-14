@@ -21,7 +21,7 @@ def get_distance(message: Message):
         with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
             data['distance_from_center'] = int(message.text)
             bot.send_message(message.chat.id, 'Хорошо. Какая максимальная стоимость отеля за ночь? '
-                                              'Указывать в долларах.')
+                                              'Указывать в рублях.')
     else:
         bot.send_message(message.chat.id,
                          'Расстояние от центра должно быть указана числом (километры)')
@@ -38,4 +38,4 @@ def get_max_price(message: Message):
                              reply_markup=amount_request())
     else:
         bot.send_message(message.chat.id,
-                         'Стоимость отеля должна быть указана числом (долларов за ночь)')
+                         'Стоимость отеля должна быть указана числом (рублей за ночь)')
