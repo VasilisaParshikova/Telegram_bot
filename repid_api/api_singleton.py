@@ -49,27 +49,8 @@ class ApiSgltn:
         hotels_dict = json.loads(response.text)
         print(hotels_dict)
         hotels_dict = hotels_dict['data']['body']['searchResults']['results']
-        results = []
-        hotel_id_in_res = 0
-        for hotel_info in hotels_dict:
-            results.append(dict())
-            results[hotel_id_in_res]['name'] = hotel_info['name']
-            results[hotel_id_in_res]['starRating'] = hotel_info['starRating']
-            if 'streetAddress' in hotel_info['address']:
-                results[hotel_id_in_res]['address'] = hotel_info['address']['streetAddress']
-            else:
-                results[hotel_id_in_res]['address'] = ' '
-            #    results[hotel_id_in_res]['guestRating'] = hotel_info['guestReviews']['rating']
-            results[hotel_id_in_res]['price'] = hotel_info['ratePlan']['price']['current']
-            hotel_id_in_res += 1
-        answer = []
 
-        for hotel in results:
-            answer.append('Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
-                hotel['name'], hotel['starRating'], hotel['address'], hotel['price']
-            ))
-        answer = ''.join(answer)
-        return answer
+        return hotels_dict
 
     def get_results_bestdeal(self, city_id: int, hotel_amount: int,
                              date_in: str, date_out: str, distance: int, max_price: int):
@@ -92,35 +73,12 @@ class ApiSgltn:
         hotels_dict = json.loads(response.text)
         print(hotels_dict)
         hotels_dict = hotels_dict['data']['body']['searchResults']['results']
-        results = []
-        hotel_id_in_res = 0
-        for hotel_info in hotels_dict:
-            results.append(dict())
-            results[hotel_id_in_res]['name'] = hotel_info['name']
-            results[hotel_id_in_res]['starRating'] = hotel_info['starRating']
-            if 'streetAddress' in hotel_info['address']:
-                results[hotel_id_in_res]['address'] = hotel_info['address']['streetAddress']
-            else:
-                results[hotel_id_in_res]['address'] = ' '
-            #    results[hotel_id_in_res]['guestRating'] = hotel_info['guestReviews']['rating']
 
-            for landmark in hotel_info['landmarks']:
-                if landmark['label'] == 'Центр города' and float(landmark['distance'][:-3].replace(',', '.')) < distance:
-                    results[hotel_id_in_res]['distance_from_center'] = landmark['distance']
-                    break
-                else:
-                    results[hotel_id_in_res]['distance_from_center'] = ''
-            if 'ratePlan' in hotel_info:
-                results[hotel_id_in_res]['price'] = hotel_info['ratePlan']['price']['current']
-            else:
-                results[hotel_id_in_res]['price'] = 'не указана'
-            hotel_id_in_res += 1
-        answer = []
+        return hotels_dict
 
-        for hotel in results:
-            if hotel['distance_from_center'] != '':
-                answer.append('Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\nРасстояние от центра города: {}\n'.format(
-                    hotel['name'], hotel['starRating'], hotel['address'], hotel['price'], hotel['distance_from_center']
-                ))
-        answer = ''.join(answer)
-        return answer
+    def get_photo(self, hotel_id: int):
+        url = "https://hotels4.p.rapidapi.com/properties/get-hotel-photos"
+        querystring = {"id": hotel_id}
+        response = requests.request("GET", url, headers=self.__headers, params=querystring)
+        data = json.loads(response.text)
+        return data['hotelImages']

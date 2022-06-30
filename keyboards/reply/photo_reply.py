@@ -1,9 +1,9 @@
 from telebot.types import ReplyKeyboardMarkup, KeyboardButton
 
-def yes_no_reply() -> ReplyKeyboardMarkup:
+def photo_reply() -> ReplyKeyboardMarkup:
     keyboard = ReplyKeyboardMarkup(resize_keyboard=True)
-    key_yes = KeyboardButton('Да')
-    key_no = KeyboardButton('Нет')
+    key_yes = KeyboardButton('Списком')
+    key_no = KeyboardButton('С фото')
     keyboard.add(key_yes, key_no)
     return keyboard
 

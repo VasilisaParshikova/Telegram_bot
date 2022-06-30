@@ -1,1 +1,1 @@
-from . import yes_no
+from . import photo_reply

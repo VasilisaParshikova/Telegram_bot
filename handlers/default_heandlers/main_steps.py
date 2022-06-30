@@ -1,11 +1,13 @@
 from telebot.types import Message
+from telebot import types
 from loader import bot
 from states.search_request import UserRequestState
 from telegram_bot_calendar import DetailedTelegramCalendar, LSTEP
 from datetime import date, timedelta
 from repid_api.api_singleton import ApiSgltn
-from keyboards.reply.yes_no import yes_no_reply
+from keyboards.reply.photo_reply import photo_reply
 from keyboards.reply.amount_request import amount_request
+from utils.hotel_list import hotel_list, hotel_list_bestdeal, add_photo
 
 commands = [
     'lowprice',
@@ -59,7 +61,7 @@ def get_date_out(message: Message):
                 bot.set_state(message.from_user.id, UserRequestState.date_out, message.chat.id)
                 bot.send_message(message.chat.id, 'Хорошо. '
                                                   'Теперь укажи какое количество отелей надо вывести (от 1 до 10).',
-                                 reply_markup=amount_request())
+                                                   reply_markup=amount_request())
     else:
         bot.send_message(message.chat.id,
                          'Длительность проживания должна быть указана числом (количество дней)')
@@ -73,69 +75,86 @@ def get_hotel_amount(message: Message):
             with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
                 data['hotel_amount'] = int(message.text)
             bot.send_message(message.chat.id, 'Хорошо. '
-                                              'Выводить ли фотографии отелей?', reply_markup=yes_no_reply())
+                                              'Выберите формат вывода поиска:'
+                                              '\nСписком - краткая информация о всех отелях одним текстовым сообщением'
+                                              '\nС фото - для каждого отедя будет отправлено сообщение с '
+                                              'фотографиями и кратким описанием', reply_markup=photo_reply())
     else:
         bot.send_message(message.chat.id, 'Необходимо указать число от 1 до 10')
 
 
 @bot.message_handler(state=UserRequestState.hotel_amount)
-def get_foto_flag(message: Message):
-    if message.text.lower() == 'да':
-        bot.set_state(message.from_user.id, UserRequestState.foto_flag, message.chat.id)
-        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-            data['foto_flag'] = True
-        bot.send_message(message.chat.id, 'Сколько фото выводить (от 1 до 10)?',
-                         reply_markup=amount_request())
-    elif message.text.lower() == 'нет':
-        bot.set_state(message.from_user.id, UserRequestState.foto_amount, message.chat.id)
-        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-            data['foto_flag'] = False
+def get_photo_flag(message: Message):
+    with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+        data['photo_flag'] = False
+        if data['command'] in commands:
+            result = ApiSgltn().get_results(data['city_id'],
+                                            data['hotel_amount'],
+                                            data['command'],
+                                            str(data['date_in']),
+                                            str(data['date_out']), )
+        else:
+            result = ApiSgltn().get_results_bestdeal(data['city_id'],
+                                                     data['hotel_amount'],
+                                                     str(data['date_in']),
+                                                     str(data['date_out']),
+                                                     data['distance_from_center'],
+                                                     data['max_price_per_night'])
+        if result:
             if data['command'] in commands:
-                result = ApiSgltn().get_results(data['city_id'],
-                                                data['hotel_amount'],
-                                                data['command'],
-                                                str(data['date_in']),
-                                                str(data['date_out']), )
+                result = hotel_list(result)
+                data['result_dict'] = result
+                answer = []
+                for hotel in result:
+                    answer.append('Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
+                        hotel['name'], hotel['starRating'], hotel['address'], hotel['price']
+                    ))
+                answer = ''.join(answer)
             else:
-                result = ApiSgltn().get_results_bestdeal(data['city_id'],
-                                                         data['hotel_amount'],
-                                                         str(data['date_in']),
-                                                         str(data['date_out']),
-                                                         data['distance_from_center'],
-                                                         data['max_price_per_night'])
+                result = hotel_list_bestdeal(result, data['distance_from_center'], data['hotel_amount'])
+                data['result_dict'] = result
+                answer = []
+                for hotel in result:
+                    answer.append('Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}'
+                                  '\nЦена за ночь {}\n'.format(
+                        hotel['name'], hotel['starRating'],
+                        hotel['address'],
+                        hotel['distance_from_center'],
+                        hotel['price']
+                    ))
+                answer = ''.join(answer)
+            data['result_text'] = answer
+            if message.text.lower() == 'списком':
+                bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
+                bot.send_message(message.chat.id, answer)
+            elif message.text.lower() in ['с фото', 'фото']:
+                bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
+                data['photo_flag'] = True
+                data['result_dict'] = add_photo(data['result_dict'])
+                for hotel in data['result_dict']:
+                    if data['command'] not in commands:
+                        hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}' \
+                                     '\nЦена за ночь {}\n'.format(
+                                                                hotel['name'], hotel['starRating'],
+                                                                hotel['address'],
+                                                                hotel['distance_from_center'],
+                                                                hotel['price']
+                                                              )
+                    else:
+                        hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
+                        hotel['name'], hotel['starRating'], hotel['address'], hotel['price'])
+                    media = []
+                    media.append(types.InputMediaPhoto(media=hotel['photos'][0], caption = hotel_text))
+                    for i in range(1, len(hotel['photos'])):
+                        media.append(types.InputMediaPhoto(media=hotel['photos'][i]))
+                    bot.send_media_group(chat_id=message.chat.id, media=media)
+            else:
+                bot.send_message(message.chat.id, 'Необходимо выбрать один из вариантов: "список" или "с фото". '
+                                                  'Для удобства ввода воспользуйтесь специальной клавиатурой'
+                                                  ' внизу экрана')
+        else:
+            bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
+                                              f'по {data["date_out"]} не было найдено отелей.')
 
-            if result:
-                bot.send_message(message.chat.id, result)
-            else:
-                bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
-                                                  f'по {data["date_out"]} не было найдено отелей.')
-    else:
-        bot.send_message(message.chat.id, 'Надо ответить да или нет')
 
 
-@bot.message_handler(state=UserRequestState.foto_flag)
-def get_foto_amount(message: Message):
-    if message.text.isdigit() and 1 <= int(message.text) <= 10:
-        bot.set_state(message.from_user.id, UserRequestState.foto_amount, message.chat.id)
-        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-            data['foto_amount'] = int(message.text)
-            if data['command'] in commands:
-                result = ApiSgltn().get_results(data['city_id'],
-                                                data['hotel_amount'],
-                                                data['command'],
-                                                str(data['date_in']),
-                                                str(data['date_out']), )
-            else:
-                result = ApiSgltn().get_results_bestdeal(data['city_id'],
-                                                         data['hotel_amount'],
-                                                         str(data['date_in']),
-                                                         str(data['date_out']),
-                                                         data['distance_from_center'],
-                                                         data['max_price_per_night'])
-            if result:
-                bot.send_message(message.chat.id, result)
-            else:
-                bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
-                                                  f'по {data["date_out"]} не было найдено отелей.')
-    else:
-        bot.send_message(message.chat.id, 'Необходимо указать число от 1 до 10')

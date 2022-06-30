@@ -7,7 +7,7 @@ class UserRequestState(StatesGroup):
     distance_from_center = State()
     price_per_night_max = State()
     hotel_amount = State()
-    foto_flag = State()
-    foto_amount = State()
+    photo_flag = State()
+
 
 
