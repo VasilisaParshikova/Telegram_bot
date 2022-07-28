@@ -13,7 +13,10 @@ def hotel_list(data: list):
             results[hotel_id_in_res]['address'] = ' '
         results[hotel_id_in_res]['price'] = hotel_info['ratePlan']['price']['current']
         hotel_id_in_res += 1
-    return results
+    if hotel_id_in_res == 0:
+        return False
+    else:
+        return results
 
 def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int):
     results = []
@@ -39,7 +42,10 @@ def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int):
                 break
         if hotel_id_in_res == hotel_amount:
             break
-    return results
+    if hotel_id_in_res == 0:
+        return False
+    else:
+        return results
 
 def add_photo(hotel_lst: list):
     for hotel in hotel_lst:
