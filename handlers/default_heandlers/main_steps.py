@@ -62,7 +62,7 @@ def get_date_out(message: Message):
                 bot.set_state(message.from_user.id, UserRequestState.date_out, message.chat.id)
                 bot.send_message(message.chat.id, 'Хорошо. '
                                                   'Теперь укажи какое количество отелей надо вывести (от 1 до 10).',
-                                                   reply_markup=amount_request())
+                                 reply_markup=amount_request())
     else:
         bot.send_message(message.chat.id,
                          'Длительность проживания должна быть указана числом (количество дней)')
@@ -86,88 +86,106 @@ def get_hotel_amount(message: Message):
 
 @bot.message_handler(state=UserRequestState.hotel_amount)
 def get_photo_flag(message: Message):
+    correct_input = False
+    photo_flag = False
+    result_list = False
+    if message.text.lower() == 'списком':
+        bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
+        correct_input = True
+    elif message.text.lower() in ['с фото', 'фото']:
+        bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
+        correct_input = True
+        photo_flag = True
+    else:
+        bot.send_message(message.chat.id, 'Необходимо выбрать один из вариантов: "список" или "с фото". '
+                                          'Для удобства ввода воспользуйтесь специальной клавиатурой'
+                                          ' внизу экрана')
+
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
-        data['photo_flag'] = False
-        if data['command'] in commands:
+        if correct_input and data['command'] in commands:
             result = ApiSgltn().get_results(data['city_id'],
                                             data['hotel_amount'],
                                             data['command'],
                                             str(data['date_in']),
                                             str(data['date_out']), )
-        else:
+            if result:
+                result_list = hotel_list(result)
+            if result_list:
+                data['result_dict'] = result_list
+                answer = []
+                for hotel in result_list:
+                    answer.append('Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
+                        hotel['name'], hotel['starRating'], hotel['address'], hotel['price']
+                    ))
+                answer = ''.join(answer)
+                data['result_text'] = answer
+            else:
+                bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
+                                                  f'по {data["date_out"]} не было найдено отелей.',
+                                 reply_markup=types.ReplyKeyboardRemove())
+
+        if correct_input and data['command'] not in commands:
             result = ApiSgltn().get_results_bestdeal(data['city_id'],
                                                      data['hotel_amount'],
                                                      str(data['date_in']),
                                                      str(data['date_out']),
                                                      data['max_price_per_night'])
-        if result:
-            if data['command'] in commands:
-                result = hotel_list(result)
-                if result:
-                    data['result_dict'] = result
-                    answer = []
-                    for hotel in result:
-                        answer.append('Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
-                            hotel['name'], hotel['starRating'], hotel['address'], hotel['price']
-                        ))
-                    answer = ''.join(answer)
-                else:
-                    bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
-                                                      f'по {data["date_out"]} не было найдено отелей.',
-                                                      reply_markup=types.ReplyKeyboardRemove())
-            else:
-                result = hotel_list_bestdeal(result, data['distance_from_center'], data['hotel_amount'])
-                if result:
-                    data['result_dict'] = result
-                    answer = []
-                    for hotel in result:
-                        answer.append('Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}'
-                                      '\nЦена за ночь {}\n'.format(
-                                      hotel['name'], hotel['starRating'],
-                                      hotel['address'],
-                                      hotel['distance_from_center'],
-                                      hotel['price']
-                                     ))
-                    answer = ''.join(answer)
-                    data['result_text'] = answer
-                else:
-                    bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
-                                                      f'по {data["date_out"]} не было найдено отелей.',
-                                                      reply_markup=types.ReplyKeyboardRemove())
             if result:
-                if message.text.lower() == 'списком':
-                    bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
-                    bot.send_message(message.chat.id, answer, reply_markup=types.ReplyKeyboardRemove())
-                elif message.text.lower() in ['с фото', 'фото']:
-                    bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
-                    data['photo_flag'] = True
-                    data['result_dict'] = add_photo(data['result_dict'])
-                    for hotel in data['result_dict']:
-                        if data['command'] not in commands:
-                            hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}' \
-                                     '\nЦена за ночь {}\n'.format(
-                                                                hotel['name'], hotel['starRating'],
-                                                                hotel['address'],
-                                                                hotel['distance_from_center'],
-                                                                hotel['price']
-                                                              )
-                        else:
-                            hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
-                            hotel['name'], hotel['starRating'], hotel['address'], hotel['price'])
+                result_list = hotel_list_bestdeal(result, data['distance_from_center'], data['hotel_amount'])
+            if result_list:
+                data['result_dict'] = result_list
+                answer = []
+                for hotel in result_list:
+                    answer.append('Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}'
+                                  '\nЦена за ночь {}\n'.format(
+                        hotel['name'], hotel['starRating'],
+                        hotel['address'],
+                        hotel['distance_from_center'],
+                        hotel['price']
+                    ))
+                answer = ''.join(answer)
+                data['result_text'] = answer
+            else:
+                bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
+                                                  f'по {data["date_out"]} не было найдено отелей по '
+                                                  f'указанным параметрам.',
+                                 reply_markup=types.ReplyKeyboardRemove())
+
+        if correct_input and photo_flag and result_list:
+            data['result_dict'] = add_photo(data['result_dict'])
+            if data['command'] not in commands:
+                for hotel in data['result_dict']:
+                    hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}' \
+                                 '\nЦена за ночь {}\n'.format(
+                                                                  hotel['name'], hotel['starRating'],
+                                                                  hotel['address'],
+                                                                  hotel['distance_from_center'],
+                                                                  hotel['price']
+                                                                  )
+                    if len(hotel['photos']) > 0:
                         media = []
-                        media.append(types.InputMediaPhoto(media=hotel['photos'][0], caption = hotel_text))
+                        media.append(types.InputMediaPhoto(media=hotel['photos'][0], caption=hotel_text))
                         for i in range(1, len(hotel['photos'])):
                             media.append(types.InputMediaPhoto(media=hotel['photos'][i]))
                         bot.send_media_group(chat_id=message.chat.id, media=media)
-                    bot.send_message(message.chat.id, 'Окончание результатов поиска', reply_markup=types.ReplyKeyboardRemove())
-                else:
-                    bot.send_message(message.chat.id, 'Необходимо выбрать один из вариантов: "список" или "с фото". '
-                                                      'Для удобства ввода воспользуйтесь специальной клавиатурой'
-                                                      ' внизу экрана')
-        else:
-            bot.send_message(message.chat.id, f'В городе {data["city"]} на период с {data["date_in"]} '
-                                              f'по {data["date_out"]} не было найдено отелей.',
-                                              reply_markup=types.ReplyKeyboardRemove())
+                    else:
+                        bot.send_message(message.chat.id, '\n'.join([hotel_text,
+                                                                     '*у данного отеля нет фотографий']))
+            else:
+                for hotel in data['result_dict']:
+                    hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n'.format(
+                            hotel['name'], hotel['starRating'], hotel['address'], hotel['price'])
+                    if len(hotel['photos']) > 0:
+                        media = []
+                        media.append(types.InputMediaPhoto(media=hotel['photos'][0], caption=hotel_text))
+                        for i in range(1, len(hotel['photos'])):
+                            media.append(types.InputMediaPhoto(media=hotel['photos'][i]))
+                        bot.send_media_group(chat_id=message.chat.id, media=media)
+                    else:
+                        bot.send_message(message.chat.id, '\n'.join([hotel_text,
+                                                                     '*у данного отеля нет фотографий']))
+            bot.send_message(message.chat.id, 'Окончание результатов поиска',
+                                 reply_markup=types.ReplyKeyboardRemove())
 
-
-
+        if correct_input and not photo_flag and result_list:
+            bot.send_message(message.chat.id, answer, reply_markup=types.ReplyKeyboardRemove())

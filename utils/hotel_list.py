@@ -1,4 +1,6 @@
 from repid_api.api_singleton import ApiSgltn
+
+
 def hotel_list(data: list):
     results = []
     hotel_id_in_res = 0
@@ -17,6 +19,7 @@ def hotel_list(data: list):
         return False
     else:
         return results
+
 
 def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int):
     results = []
@@ -47,18 +50,18 @@ def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int):
     else:
         return results
 
+
 def add_photo(hotel_lst: list):
     for hotel in hotel_lst:
         photo_urls_lst = ApiSgltn().get_photo(hotel['id'])
         photo_urls = []
         count = 0
-        for photo in photo_urls_lst:
-            photo_url = photo['baseUrl'].replace('{size}', photo['sizes'][0]['suffix'])
-            photo_urls.append(photo_url)
-            count += 1
-            if count == 10:
-                break
+        if photo_urls_lst:
+            for photo in photo_urls_lst:
+                photo_url = photo['baseUrl'].replace('{size}', photo['sizes'][0]['suffix'])
+                photo_urls.append(photo_url)
+                count += 1
+                if count == 10:
+                    break
         hotel['photos'] = photo_urls
     return hotel_lst
-
-

@@ -21,12 +21,15 @@ class ApiSgltn:
         return ApiSgltn.__instance
 
     def request_func(self, url, querystring):
-        response = requests.request("GET", ''.join([self.__basic_url, url]), headers=self.__headers, params=querystring)
-        if response.status_code == requests.codes.ok:
-            result = json.loads(response.text)
-        else:
-            result = False
-        return result
+        try:
+            response = requests.request("GET", ''.join([self.__basic_url, url]), headers=self.__headers, params=querystring)
+            if response.status_code == requests.codes.ok:
+                result = json.loads(response.text)
+            else:
+                result = False
+            return result
+        except Exception:
+            return False
 
     def city_request(self, city: str):
         querystring = {"query": city,
