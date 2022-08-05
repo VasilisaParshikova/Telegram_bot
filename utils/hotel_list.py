@@ -1,7 +1,7 @@
 from repid_api.api_singleton import ApiSgltn
 
 
-def hotel_list(data: list):
+def hotel_list(data: list, duration: int):
     results = []
     hotel_id_in_res = 0
     for hotel_info in data:
@@ -18,10 +18,18 @@ def hotel_list(data: list):
     if hotel_id_in_res == 0:
         return False
     else:
-        return results
+        answer = []
+        for hotel in results:
+            answer.append('Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\nПолная стоимость {}'
+                          '\nСсылка: https://www.hotels.com/ho{}\n'.format(
+                          hotel['name'], hotel['starRating'], hotel['address'], hotel['price'],
+                          int(hotel['price'][:-4].replace(',', '')) * duration, hotel['id']
+            ))
+        answer = ''.join(answer)
+        return results, answer
 
 
-def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int):
+def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int, duration: int):
     results = []
     hotel_id_in_res = 0
     for hotel_info in data:
@@ -48,7 +56,21 @@ def hotel_list_bestdeal(data: list, distance: int, hotel_amount: int):
     if hotel_id_in_res == 0:
         return False
     else:
-        return results
+        answer = []
+        for hotel in results:
+            answer.append('Отель {} {} звезд(ы).\nАдрес:{}.\nРастоянее от центра: {}'
+                          '\nЦена за ночь {} \nПолная стоимость {}'
+                          '\nСсылка: https://www.hotels.com/ho{}\n'.format(
+                hotel['name'],
+                hotel['starRating'],
+                hotel['address'],
+                hotel['distance_from_center'],
+                hotel['price'],
+                int(hotel['price'][:-4].replace(',', '')) * duration,
+                hotel['id']
+            ))
+        answer = ''.join(answer)
+        return results, answer
 
 
 def add_photo(hotel_lst: list):

@@ -22,7 +22,8 @@ class ApiSgltn:
 
     def request_func(self, url, querystring):
         try:
-            response = requests.request("GET", ''.join([self.__basic_url, url]), headers=self.__headers, params=querystring)
+            response = requests.request("GET", ''.join([self.__basic_url, url]), headers=self.__headers,
+                                        params=querystring, timeout=10)
             if response.status_code == requests.codes.ok:
                 result = json.loads(response.text)
             else:
