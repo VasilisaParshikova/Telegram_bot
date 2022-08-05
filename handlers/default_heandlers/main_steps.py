@@ -57,7 +57,7 @@ def get_date_out(message: Message):
             if data['command'] == 'beastdeal':
                 bot.set_state(message.from_user.id, UserRequestState.distance_from_center, message.chat.id)
                 bot.send_message(message.chat.id, 'Хорошо. Теперь укажи максимальную удалённость отеля от центра '
-                                                  'города в колиметрах.', reply_markup=types.ReplyKeyboardRemove())
+                                                  'города в километрах.', reply_markup=types.ReplyKeyboardRemove())
             else:
                 bot.set_state(message.from_user.id, UserRequestState.date_out, message.chat.id)
                 bot.send_message(message.chat.id, 'Хорошо. '

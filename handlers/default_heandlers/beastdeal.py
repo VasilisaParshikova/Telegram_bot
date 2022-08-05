@@ -7,7 +7,7 @@ from keyboards.reply.amount_request import amount_request
 @bot.message_handler(commands=['beastdeal'])
 def bot_bestdeal(message: Message):
     bot.set_state(message.from_user.id, UserRequestState.city, message.chat.id)
-    bot.send_message(message.chat.id, 'Запускаем поиск отелей в центре города.'
+    bot.send_message(message.chat.id, 'Запускаем поиск отелей в центре города. '
                                       'В каком городе искать отели?')
     with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
         data['command'] = 'beastdeal'
