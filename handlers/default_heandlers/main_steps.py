@@ -7,7 +7,9 @@ from datetime import date, timedelta
 from repid_api.api_singleton import ApiSgltn
 from keyboards.reply.photo_reply import photo_reply
 from keyboards.reply.amount_request import amount_request
+from keyboards.reply.yes_no import yes_no
 from utils.hotel_list import hotel_list, hotel_list_bestdeal, add_photo
+from database.MySQL_script import DB_Worker
 
 commands = [
     'lowprice',
@@ -92,10 +94,12 @@ def get_photo_flag(message: Message):
     if message.text.lower() == 'списком':
         bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
         correct_input = True
+        bot.set_state(message.from_user.id, UserRequestState.database_work, message.chat.id)
     elif message.text.lower() in ['с фото', 'фото']:
         bot.set_state(message.from_user.id, UserRequestState.photo_flag, message.chat.id)
         correct_input = True
         photo_flag = True
+        bot.set_state(message.from_user.id, UserRequestState.database_work, message.chat.id)
     else:
         bot.send_message(message.chat.id, 'Необходимо выбрать один из вариантов: "список" или "с фото". '
                                           'Для удобства ввода воспользуйтесь специальной клавиатурой'
@@ -178,8 +182,20 @@ def get_photo_flag(message: Message):
                     else:
                         bot.send_message(message.chat.id, '\n'.join([hotel_text,
                                                                      '*у данного отеля нет фотографий']))
-            bot.send_message(message.chat.id, 'Окончание результатов поиска',
-                             reply_markup=types.ReplyKeyboardRemove())
+            bot.send_message(message.chat.id, 'Окончание результатов поиска. '
+                                              'Если хотите сохранить результаты поиска для дальнейшего доступа - нажмите Да.',
+                                                reply_markup=yes_no())
 
         if correct_input and not photo_flag and result_data:
             bot.send_message(message.chat.id, data['result_text'], reply_markup=types.ReplyKeyboardRemove())
+            bot.send_message(message.chat.id, 'Если хотите сохранить результаты поиска для дальнейшего доступа - нажмите Да.',
+                             reply_markup=yes_no())
+
+@bot.message_handler(state=UserRequestState.database_work)
+def get_photo_flag(message: Message):
+    if message.text.lower() == 'да':
+        with bot.retrieve_data(message.from_user.id, message.chat.id) as data:
+            DB_Worker().write_to_db(message.chat.id,data)
+        bot.send_message(message.chat.id,
+                         'Информация о результатах поиска будет доступна по команде /history',
+                         reply_markup = types.ReplyKeyboardRemove())
