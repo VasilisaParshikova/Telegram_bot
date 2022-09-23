@@ -36,8 +36,8 @@ class DB_Worker:
                 message_texts = []
                 print(work_cursor)
                 for line in work_cursor:
-                    text = '{request_param} \n Дата: {req_date}, команда: {command} . \n' \
-                           'Результаты: \n {results}'.format(
+                    text = '{request_param} \nДата: {req_date}, команда: {command} . \n\n' \
+                           'Результаты: \n{results}'.format(
                         request_param = line[3],
                         req_date = line[5],
                         command = line[2],

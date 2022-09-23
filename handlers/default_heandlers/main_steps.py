@@ -146,7 +146,7 @@ def get_photo_flag(message: Message):
             if data['command'] not in commands:
                 for hotel in data['result_dict']:
                     hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nРастоянее от центра: {}' \
-                                 '\nЦена за ночь {}\nПолная стоимость {} \nСсылка: https://www.hotels.com/ho{}'.format(
+                                 '\nЦена за ночь {}\nПолная стоимость {} RUB\nСсылка: https://www.hotels.com/ho{}'.format(
                                   hotel['name'], hotel['starRating'],
                                   hotel['address'],
                                   hotel['distance_from_center'],
@@ -170,7 +170,7 @@ def get_photo_flag(message: Message):
             else:
                 for hotel in data['result_dict']:
                     hotel_text = 'Отель {} {} звезды.\nАдрес:{}.\nЦена за ночь {}\n' \
-                                 'Полная стоимость {} \nСсылка: https://www.hotels.com/ho{}'.format(
+                                 'Полная стоимость {} RUB\nСсылка: https://www.hotels.com/ho{}'.format(
                                   hotel['name'], hotel['starRating'], hotel['address'], hotel['price'],
                                   int(hotel['price'][:-4].replace(',', '')) * int(data['duration']), hotel['id'])
                     if len(hotel['photos']) > 0:
